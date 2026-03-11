@@ -93,17 +93,12 @@ function getTimestamp(): string {
   const d = new Date();
   const pad = (n: number): string => String(n).padStart(2, "0");
   return [
-    d.getUTCFullYear(),
-    "-",
-    pad(d.getUTCMonth() + 1),
-    "-",
-    pad(d.getUTCDate()),
-    "T",
-    pad(d.getUTCHours()),
-    "-",
-    pad(d.getUTCMinutes()),
-    "-",
-    pad(d.getUTCSeconds()),
+    d.getFullYear(),
+    pad(d.getMonth() + 1),
+    pad(d.getDate()),
+    pad(d.getHours()),
+    pad(d.getMinutes()),
+    pad(d.getSeconds()),
   ].join("");
 }
 
@@ -175,7 +170,7 @@ async function runBackup(config: Config, localTarget: boolean): Promise<void> {
   const cpus = Math.max(1, Math.floor(os.cpus().length / 2));
   const compressCmd = `${compression} -p ${cpus}`;
 
-  const tarArgs: string[] = [compressFlag, compressCmd];
+  const tarArgs: string[] = [compressFlag, compressCmd, "--ignore-failed-read"];
   for (const p of config.exclude) {
     tarArgs.push("--exclude", p);
   }
@@ -197,9 +192,13 @@ async function runBackup(config: Config, localTarget: boolean): Promise<void> {
       tar.stdout!.pipe(outStream);
 
       tar.on("close", (code: number | null) => {
-        if (code !== 0) {
+        if (code === 1) {
           process.stderr.write(
-            `\u274c Tar exited with ${code}. Check if '${compression}' is installed.\n`
+            `\u26a0\ufe0f  Tar exited with 1 (some files changed during archiving). Backup may still be valid.\n`
+          );
+        } else if (code !== 0) {
+          process.stderr.write(
+            `\u274c Tar exited with ${code}. Check stderr above for details (e.g. permission denied on files).\n`
           );
           return reject(new Error("Tar process failed"));
         }
@@ -271,9 +270,13 @@ async function runBackup(config: Config, localTarget: boolean): Promise<void> {
           });
 
           tar.on("close", (code: number | null) => {
-            if (code !== 0) {
+            if (code === 1) {
               process.stderr.write(
-                `\u274c Tar exited with ${code}. Check if '${compression}' is installed.\n`
+                `\u26a0\ufe0f  Tar exited with 1 (some files changed during archiving). Backup may still be valid.\n`
+              );
+            } else if (code !== 0) {
+              process.stderr.write(
+                `\u274c Tar exited with ${code}. Check stderr above for details (e.g. permission denied on files).\n`
               );
               conn.end();
               return reject(new Error("Tar process failed"));
