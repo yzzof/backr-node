@@ -1,0 +1,21 @@
+{
+  "ssh_host": "hostname.local",
+  "ssh_port": 22,
+  "ssh_user": "username",
+  "ssh_private_key_path": "~/.ssh/id_ed25519",
+  "target": "/media/user/backups/",
+  "compression": "pixz",
+  "include": [
+    "/"
+  ],
+  "exclude": [
+    "/dev/*",
+    "/proc/*",
+    "/sys/*",
+    "/tmp/*",
+    "/run/*",
+    "/mnt/*",
+    "/media/*",
+    "/swapfile"
+  ]
+}
